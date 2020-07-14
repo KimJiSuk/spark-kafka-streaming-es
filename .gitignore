@@ -1,0 +1,7 @@
+#directory
+target/
+project/target
+.idea
+
+#file
+.DS_Store

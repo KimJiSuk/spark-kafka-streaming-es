@@ -1,0 +1,109 @@
+{
+  "type": "record",
+  "name": "ac",
+  "namespace": "com.mobigen.naas.model.l2ptn.ac",
+  "doc": "L2 PTN access interface performance metric",
+  "fields": [
+    {
+      "name": "_timestamp",
+      "type": {
+        "type": "string",
+        "connect.doc": "The time at which the metric value was measured"
+      },
+      "doc": "The time at which the metric value was measured"
+    },
+    {
+      "name": "tg_tid",
+      "type": {
+        "type": "string",
+        "connect.doc": "TID"
+      },
+      "doc": "TID"
+    },
+    {
+      "name": "tg_system_type",
+      "type": {
+        "type": "string",
+        "connect.doc": "system type"
+      },
+      "doc": "system type"
+    },
+    {
+      "name": "tg_slot",
+      "type": {
+        "type": "string",
+        "connect.doc": "slot"
+      },
+      "doc": "slot"
+    },
+    {
+      "name": "tg_port",
+      "type": {
+        "type": "string",
+        "connect.doc": "port"
+      },
+      "doc": "port"
+    },
+    {
+      "name": "tg_name",
+      "type": {
+        "type": "string",
+        "connect.doc": "name"
+      },
+      "doc": "name"
+    },
+    {
+      "name": "m_ing_packets",
+      "type": {
+        "type": "int",
+        "connect.doc": "ingress packet count"
+      },
+      "doc": "ingress packet count"
+    },
+    {
+      "name": "m_ing_bytes",
+      "type": {
+        "type": "int",
+        "connect.doc": "ingress packet size in bytes"
+      },
+      "doc": "ingress packet size in bytes"
+    },
+    {
+      "name": "m_ing_rate",
+      "type": {
+        "type": "int",
+        "connect.doc": "ingress throughput (kbps)"
+      },
+      "doc": "ingress throughput (kbps)"
+    },
+    {
+      "name": "m_egr_packets",
+      "type": {
+        "type": "int",
+        "connect.doc": "egress packet count"
+      },
+      "doc": "egress packet count"
+    },
+    {
+      "name": "m_egr_bytes",
+      "type": {
+        "type": "int",
+        "connect.doc": "egress packet size in bytes"
+      },
+      "doc": "egress packet size in bytes"
+    },
+    {
+      "name": "m_egr_rate",
+      "type": {
+        "type": "int",
+        "connect.doc": "egress throughput (kbps)"
+      },
+      "doc": "egress throughput (kbps)"
+    }
+  ],
+  "connect.doc": "L2 PTN access interface performance metric",
+  "connect.parameters": {
+    "connect.record.doc": "L2 PTN access interface performance metric"
+  },
+  "connect.name": "com.mobigen.naas.model.l2ptn.ac.ac"
+}
