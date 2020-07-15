@@ -93,7 +93,7 @@ object SparkConsumer {
             l2Raws.show()
 
             l2Raws.foreach(k => {
-              val ip = props.getProperty("opentsdb")
+              val ip = props.getProperty("elasticsearch")
               val topic = props.getProperty("topic_list")
               var tags = "{"
               k.schema.distinct.foreach(field => {
@@ -110,31 +110,12 @@ object SparkConsumer {
               tags = (tags.substring(0, tags.length - 1) + "}").stripMargin
 
               if (timestamp != 0L) {
-                var currentTime = System.currentTimeMillis()
-
                 k.schema.distinct.foreach(field => {
-                  println(field)
-                  val httpClient = HttpClientBuilder.create().build()
                   if (field.name.startsWith("m_")) {
+                    val httpClient = HttpClientBuilder.create().build()
                     val metric = topic + "." + field.name.substring(2, field.name.length)
                     val value = if (field.dataType.typeName.equals("string")) "1" else k.getAs(field.name).toString
-                    currentTime = currentTime + 1
-
-                    val openTSDBUrl = "http://" + ip + "/" + topic + "/_doc/" + currentTime
-                    val post = new HttpPost(openTSDBUrl)
-                    val c1 = System.currentTimeMillis() / 1000
-                    val body1 = f"""{
-                                   |        "metric": "$metric",
-                                   |        "timestamp": $timestamp,
-                                   |        "value": $value,
-                                   |        "tags": $tags
-                                   |}""".stripMargin
-
-                    println(openTSDBUrl)
-                    post.setHeader("Content-type", "application/json")
-                    post.setEntity(new StringEntity(body1))
-                    println(body1)
-                    httpClient.execute(post)
+                    new ElasticSearch().putElasticSearch(ip, metric, value, tags, httpClient, timestamp)
                     httpClient.close()
                   }
                 })
