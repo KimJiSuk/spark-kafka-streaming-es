@@ -10,8 +10,6 @@ import org.apache.spark.streaming.kafka010.LocationStrategies.PreferConsistent
 import org.apache.spark.streaming.kafka010.ConsumerStrategies.Subscribe
 import io.confluent.kafka.schemaregistry.client._
 import org.apache.avro.generic.GenericRecord
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.StringEntity
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.avro.SchemaConverters
 import org.apache.spark.sql.types.StructType
@@ -25,7 +23,6 @@ object SparkConsumer {
 
     val spark = SparkSession.builder()
       .master("local[2]")
-//      .master("spark://" + props.getProperty("spark_master_ip") + ":7077")
       .appName(props.getProperty("appname"))
       .getOrCreate()
 
@@ -94,6 +91,7 @@ object SparkConsumer {
 
             l2Raws.foreach(k => {
               val ip = props.getProperty("elasticsearch")
+//              val ip = props.getProperty("opentsdb")
               val topic = props.getProperty("topic_list")
               var tags = "{"
               k.schema.distinct.foreach(field => {
@@ -116,6 +114,7 @@ object SparkConsumer {
                     val metric = topic + "." + field.name.substring(2, field.name.length)
                     val value = if (field.dataType.typeName.equals("string")) "1" else k.getAs(field.name).toString
                     new ElasticSearch().putElasticSearch(ip, metric, value, tags, httpClient, timestamp)
+//                    new OpenTSDB().putOpenTSDB(ip, metric, value, tags, httpClient, timestamp)
                     httpClient.close()
                   }
                 })
