@@ -1,5 +1,8 @@
 package com.mobigen.connect.sink
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.kafka.common.serialization.StringDeserializer
 import io.confluent.kafka.serializers._
@@ -19,6 +22,7 @@ object SparkConsumer {
 
   def main(args: Array[String]): Unit = {
 
+    // Load Properties
     val props = AppConfig.loadProperties()
 
     val spark = SparkSession.builder()
@@ -29,6 +33,7 @@ object SparkConsumer {
     def createStreamingContext(): StreamingContext = {
       val ssc = new StreamingContext(spark.sparkContext, Seconds(60))
 
+      // Set Kafka Info
       val kafkaParams = Map[String, Object](
         "bootstrap.servers" -> props.getProperty("broker_list"),
         "key.deserializer" -> classOf[StringDeserializer],
@@ -47,8 +52,12 @@ object SparkConsumer {
         Subscribe[String, GenericRecord](topics, kafkaParams)
       )
 
+      // Get Kafka Data
       val l2Avro = stream.map(record => record.value)
 
+      /*
+      Set Schema Registry Info
+       */
       val schemaRegistry = new CachedSchemaRegistryClient(props.getProperty("schema_registry"), 1000)
       val m = schemaRegistry.getLatestSchemaMetadata(props.getProperty("schema_registry_subject"))
       val schemaId = m.getId
@@ -62,6 +71,9 @@ object SparkConsumer {
         typeList = typeList ::: List[String](schema.getFields.get(w).schema().getType.getName)
       }
 
+      /*
+      Kafka Data Processing
+       */
       l2Avro.foreachRDD({
         rdd =>
           println("rdd count : " + rdd.count().toString)
@@ -85,13 +97,12 @@ object SparkConsumer {
             val schemaStructType = SchemaConverters.toSqlType(schema).dataType.asInstanceOf[StructType]
 
             val l2Raws : DataFrame = spark.createDataFrame(l2Obj, schemaStructType)
-            var timestamp = 0L
+            var timestamp = new Date()
 
             l2Raws.show()
 
             l2Raws.foreach(k => {
               val ip = props.getProperty("elasticsearch")
-//              val ip = props.getProperty("opentsdb")
               val topic = props.getProperty("topic_list")
               var tags = "{"
               k.schema.distinct.foreach(field => {
@@ -101,25 +112,48 @@ object SparkConsumer {
                 else if (field.name.equals("_timestamp")) {
                   val _timestamp = k.getAs(field.name).toString
                   val format = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                  timestamp = format.parse(_timestamp).getTime() / 1000
+                  timestamp = format.parse(_timestamp)
                 }
               })
 
               tags = (tags.substring(0, tags.length - 1) + "}").stripMargin
 
+              /*
+              ElasticSearch example
+               */
               if (timestamp != 0L) {
+                var metricJSON = "{"
                 k.schema.distinct.foreach(field => {
+                  val metric = topic + "." + field.name.substring(2, field.name.length)
+                  val value = if (field.dataType.typeName.equals("string")) "1" else k.getAs(field.name).toString
                   if (field.name.startsWith("m_")) {
-                    val httpClient = HttpClientBuilder.create().build()
-                    val metric = topic + "." + field.name.substring(2, field.name.length)
-                    val value = if (field.dataType.typeName.equals("string")) "1" else k.getAs(field.name).toString
-                    new ElasticSearch().putElasticSearch(ip, metric, value, tags, httpClient, timestamp)
-//                    new OpenTSDB().putOpenTSDB(ip, metric, value, tags, httpClient, timestamp)
-                    httpClient.close()
+                    metricJSON += f""" "$metric": "$value",""".stripMargin
                   }
                 })
+                metricJSON = (metricJSON.substring(0, metricJSON.length - 1) + "}").stripMargin
 
+                val currentDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(timestamp)
+
+                val httpClient = HttpClientBuilder.create().build()
+                new ElasticSearch().putElasticSearch(ip, topic, metricJSON, tags, httpClient, currentDate.toString)
+                httpClient.close()
               }
+
+              /*
+              OpenTSDB example
+               */
+//              if (timestamp != 0L) {
+//                k.schema.distinct.foreach(field => {
+//                  if (field.name.startsWith("m_")) {
+//                    val httpClient = HttpClientBuilder.create().build()
+//                    val metric = topic + "." + field.name.substring(2, field.name.length)
+//                    val value = if (field.dataType.typeName.equals("string")) "1" else k.getAs(field.name).toString
+//                    new OpenTSDB().putOpenTSDB(ip, metric, value, tags, httpClient, timestamp)
+//                    httpClient.close()
+//                  }
+//                })
+//
+//              }
 
             })
 

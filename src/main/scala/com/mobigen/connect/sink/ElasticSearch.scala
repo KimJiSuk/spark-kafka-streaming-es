@@ -5,22 +5,19 @@ import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.CloseableHttpClient
 
 class ElasticSearch extends Serializable {
-  def putElasticSearch[T](ip : String, metric : String, value : String, tags : String, httpClient : CloseableHttpClient, timestamp : Long): Unit = {
+  def putElasticSearch[T](ip : String, topic : String, metricJSON : String, tags : String, httpClient : CloseableHttpClient, timestamp : String): Unit = {
 
-    val topic = metric.split('.')
-    val elasticSearchUrl = "http://" + ip + "/" + topic.head + "/_doc"
+    val elasticSearchUrl = "http://" + ip + "/" + topic + "/_doc"
     val post = new HttpPost(elasticSearchUrl)
-    val c1 = System.currentTimeMillis() / 1000
     val body1 = f"""{
-                   |        "metric": "$metric",
-                   |        "timestamp": $timestamp,
-                   |        "value": $value,
+                   |        "metric": $metricJSON,
+                   |        "@timestamp": "$timestamp",
                    |        "tags": $tags
                    |}""".stripMargin
 
     println(elasticSearchUrl)
     post.setHeader("Content-type", "application/json")
-    post.setEntity(new StringEntity(body1))
+    post.setEntity(new StringEntity(body1, "UTF-8"))
     println(body1)
     val r = httpClient.execute(post)
     println(r)

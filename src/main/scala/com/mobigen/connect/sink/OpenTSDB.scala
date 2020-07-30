@@ -10,10 +10,11 @@ class OpenTSDB extends Serializable {
     val openTSDBUrl = "http://" + ip + "/api/put"
     val post = new HttpPost(openTSDBUrl)
     val c1 = System.currentTimeMillis() / 1000
+    val _timestamp = timestamp / 1000
     val body1 =
       f"""{
          |        "metric": "$metric",
-         |        "timestamp": $timestamp,
+         |        "timestamp": $_timestamp,
          |        "value": $value,
          |        "tags": $tags
 
